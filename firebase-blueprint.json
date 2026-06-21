@@ -1,0 +1,160 @@
+{
+  "entities": {
+    "Pegawai": {
+      "title": "Pegawai",
+      "description": "Pegawai / guru data details for salary and allowances",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nip": { "type": "string" },
+        "nama": { "type": "string" },
+        "golongan": { "type": "string" },
+        "gajiPokok": { "type": "number" },
+        "sertifikasi": { "type": "boolean" },
+        "gradeTukin": { "type": "number" },
+        "tukinAktif": { "type": "boolean" },
+        "statusPegawai": { "type": "string" },
+        "bankNama": { "type": "string" },
+        "bankRekening": { "type": "string" },
+        "adaNpwp": { "type": "boolean" },
+        "notifikasiEmail": { "type": "string" },
+        "kategori": { "type": "string" }
+      },
+      "required": ["id", "nip", "nama", "golongan", "gajiPokok", "sertifikasi", "gradeTukin", "tukinAktif", "statusPegawai", "bankNama", "bankRekening", "adaNpwp"]
+    },
+    "ReferensiGolongan": {
+      "title": "ReferensiGolongan",
+      "description": "Golongan PNS references with basic wage and PPh rate",
+      "type": "object",
+      "properties": {
+        "golongan": { "type": "string" },
+        "gajiPokokAcuan": { "type": "number" },
+        "tarifPPhTPG": { "type": "number" },
+        "grade": { "type": "number" },
+        "nilaiGrade": { "type": "number" }
+      },
+      "required": ["golongan", "gajiPokokAcuan", "tarifPPhTPG"]
+    },
+    "ReferensiGradeTukin": {
+      "title": "ReferensiGradeTukin",
+      "description": "Grade tukin specifications and baseline values",
+      "type": "object",
+      "properties": {
+        "grade": { "type": "number" },
+        "nilaiTunjangan": { "type": "number" }
+      },
+      "required": ["grade", "nilaiTunjangan"]
+    },
+    "ReferensiKategori": {
+      "title": "ReferensiKategori",
+      "description": "Kategori references",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nama": { "type": "string" }
+      },
+      "required": ["id", "nama"]
+    },
+    "PejabatPenandatangan": {
+      "title": "PejabatPenandatangan",
+      "description": "Authorized official specifications",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "jabatan": { "type": "string" },
+        "nama": { "type": "string" },
+        "nip": { "type": "string" }
+      },
+      "required": ["id", "jabatan", "nama", "nip"]
+    },
+    "ItemNominatif": {
+      "title": "ItemNominatif",
+      "description": "Individual payment entry in a nominating pay run",
+      "type": "object",
+      "properties": {
+        "pegawaiId": { "type": "string" },
+        "nip": { "type": "string" },
+        "nama": { "type": "string" },
+        "golongan": { "type": "string" },
+        "gajiPokok": { "type": "number" },
+        "bayarTPG": { "type": "boolean" },
+        "brutoTPG": { "type": "number" },
+        "tarifPPhTPG": { "type": "number" },
+        "potonganPPhTPG": { "type": "number" },
+        "nettoTPG": { "type": "number" },
+        "bayarTukin": { "type": "boolean" },
+        "gradeTukin": { "type": "number" },
+        "tarifTukinDasar": { "type": "number" },
+        "persenKehadiran": { "type": "number" },
+        "brutoTukin": { "type": "number" },
+        "tarifPPhTukin": { "type": "number" },
+        "potonganPPhTukin": { "type": "number" },
+        "nettoTukin": { "type": "number" },
+        "totalBruto": { "type": "number" },
+        "totalPPh": { "type": "number" },
+        "totalNetto": { "type": "number" }
+      }
+    },
+    "PembayaranTunjangan": {
+      "title": "PembayaranTunjangan",
+      "description": "Nominatif payment sheet summary",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nomorSurat": { "type": "string" },
+        "bulan": { "type": "number" },
+        "tahun": { "type": "number" },
+        "judul": { "type": "string" },
+        "tanggalHadir": { "type": "string" },
+        "tglDibuat": { "type": "string" },
+        "itemNominatif": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "status": { "type": "string", "enum": ["DRAF", "DISETUJUI", "DIBAYARKAN"] },
+        "mulaiBulan": { "type": "number" },
+        "sampaiBulan": { "type": "number" }
+      },
+      "required": ["id", "nomorSurat", "bulan", "tahun", "judul", "tanggalHadir", "status"]
+    },
+    "GeneralConfig": {
+      "title": "GeneralConfig",
+      "description": "Global settings parameters like satkerName",
+      "type": "object",
+      "properties": {
+        "satkerName": { "type": "string" }
+      },
+      "required": ["satkerName"]
+    }
+  },
+  "firestore": {
+    "/pegawai/{pegawaiId}": {
+      "schema": "Pegawai",
+      "description": "Collection containing all employees"
+    },
+    "/golonganRefs/{golId}": {
+      "schema": "ReferensiGolongan",
+      "description": "Reference list of PNS levels and basic salaries"
+    },
+    "/gradeTukinRefs/{gradeId}": {
+      "schema": "ReferensiGradeTukin",
+      "description": "Reference list of performance allowance amounts per grade level"
+    },
+    "/kategoriRefs/{katId}": {
+      "schema": "ReferensiKategori",
+      "description": "Kategori options references"
+    },
+    "/pejabatList/{pejId}": {
+      "schema": "PejabatPenandatangan",
+      "description": "Authorized officials signing payments"
+    },
+    "/pembayaran/{pembayaranId}": {
+      "schema": "PembayaranTunjangan",
+      "description": "Payment payroll cycles"
+    },
+    "/config/{configId}": {
+      "schema": "GeneralConfig",
+      "description": "General settings configurations"
+    }
+  }
+}

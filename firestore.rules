@@ -1,0 +1,124 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net - default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Pegawai collection
+    match /pegawai/{pegawaiId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidPegawai(incoming());
+      allow delete: if isSignedIn();
+    }
+
+    function isValidPegawai(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.nip is string && data.nip.size() <= 128 &&
+             data.nama is string && data.nama.size() <= 200 &&
+             data.golongan is string && data.golongan.size() <= 10 &&
+             (data.gajiPokok is int || data.gajiPokok is float) && data.gajiPokok >= 0 &&
+             data.sertifikasi is bool &&
+             (data.gradeTukin is int || data.gradeTukin is float) && data.gradeTukin >= 0 &&
+             data.tukinAktif is bool &&
+             data.statusPegawai is string && data.statusPegawai.size() <= 50 &&
+             data.bankNama is string && data.bankNama.size() <= 100 &&
+             data.bankRekening is string && data.bankRekening.size() <= 50 &&
+             data.adaNpwp is bool &&
+             (!('notifikasiEmail' in data) || (data.notifikasiEmail is string && data.notifikasiEmail.size() <= 100)) &&
+             (!('kategori' in data) || (data.kategori is string && data.kategori.size() <= 100));
+    }
+
+    // Golongan References collection
+    match /golonganRefs/{golId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidGolongan(incoming());
+    }
+
+    function isValidGolongan(data) {
+      return data.golongan is string && data.golongan.size() <= 10 &&
+             (data.gajiPokokAcuan is int || data.gajiPokokAcuan is float) && data.gajiPokokAcuan >= 0 &&
+             (data.tarifPPhTPG is int || data.tarifPPhTPG is float) && data.tarifPPhTPG >= 0 &&
+             (!('grade' in data) || data.grade is int || data.grade is float) &&
+             (!('nilaiGrade' in data) || data.nilaiGrade is int || data.nilaiGrade is float);
+    }
+
+    // Grade Tukin References collection
+    match /gradeTukinRefs/{gradeId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidGradeTukin(incoming());
+    }
+
+    function isValidGradeTukin(data) {
+      return (data.grade is int || data.grade is float) &&
+             (data.nilaiTunjangan is int || data.nilaiTunjangan is float);
+    }
+
+    // Kategori References collection
+    match /kategoriRefs/{katId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidKategori(incoming());
+    }
+
+    function isValidKategori(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.nama is string && data.nama.size() <= 100;
+    }
+
+    // Pejabat List collection
+    match /pejabatList/{pejId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidPejabat(incoming());
+    }
+
+    function isValidPejabat(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.jabatan is string && data.jabatan.size() <= 100 &&
+             data.nama is string && data.nama.size() <= 100 &&
+             data.nip is string && data.nip.size() <= 100;
+    }
+
+    // Config collection (e.g. satkerName)
+    match /config/{configId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidConfig(incoming());
+    }
+
+    function isValidConfig(data) {
+      return data.satkerName is string && data.satkerName.size() <= 250;
+    }
+
+    // Pembayaran / Payroll cycles
+    match /pembayaran/{pembayaranId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidPembayaran(incoming());
+      allow delete: if isSignedIn();
+    }
+
+    function isValidPembayaran(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.nomorSurat is string && data.nomorSurat.size() <= 100 &&
+             (data.bulan is int || data.bulan is float) && data.bulan >= 1 && data.bulan <= 12 &&
+             (data.tahun is int || data.tahun is float) && data.tahun >= 1900 && data.tahun <= 2100 &&
+             data.judul is string && data.judul.size() <= 200 &&
+             data.tanggalHadir is string && data.tanggalHadir.size() <= 50 &&
+             data.status is string && (data.status == 'DRAF' || data.status == 'DISETUJUI' || data.status == 'DIBAYARKAN') &&
+             (!('itemNominatif' in data) || data.itemNominatif is list);
+    }
+  }
+}

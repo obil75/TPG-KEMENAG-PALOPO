@@ -62,6 +62,12 @@ export default function ReferensiSistem({
 
   const [editingPejabatId, setEditingPejabatId] = useState<string | null>(null);
   const [editPejabatData, setEditPejabatData] = useState<Partial<PejabatPenandatangan>>({});
+  const [isAddingPejabat, setIsAddingPejabat] = useState<boolean>(false);
+  const [newPejabatData, setNewPejabatData] = useState<Omit<PejabatPenandatangan, 'id'>>({
+    jabatan: '',
+    nama: '',
+    nip: '',
+  });
 
   const [editingKategoriId, setEditingKategoriId] = useState<string | null>(null);
   const [editKategoriName, setEditKategoriName] = useState<string>('');
@@ -134,6 +140,30 @@ export default function ReferensiSistem({
     });
     setPejabatList(updated);
     setEditingPejabatId(null);
+  };
+
+  const handleAddPejabat = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPejabatData.jabatan.trim() || !newPejabatData.nama.trim() || !newPejabatData.nip.trim()) {
+      alert('Harap isi semua kolom data pejabat.');
+      return;
+    }
+    const newPejabat: PejabatPenandatangan = {
+      id: 'pej_' + Math.random().toString(36).substring(2, 9),
+      jabatan: newPejabatData.jabatan.trim(),
+      nama: newPejabatData.nama.trim(),
+      nip: newPejabatData.nip.trim(),
+    };
+    setPejabatList([...pejabatList, newPejabat]);
+    setNewPejabatData({ jabatan: '', nama: '', nip: '' });
+    setIsAddingPejabat(false);
+  };
+
+  const handleDeletePejabat = (id: string) => {
+    if (confirm('Apakah Anda yakin ingin menghapus pejabat penandatangan ini?')) {
+      const updated = pejabatList.filter(p => p.id !== id);
+      setPejabatList(updated);
+    }
   };
 
   // 4. Kategori functions
@@ -471,16 +501,108 @@ export default function ReferensiSistem({
             </div>
 
             {/* Signatory Pejabat List */}
-            <div className="space-y-3">
-              <div className="flex flex-col">
-                <h3 className="text-white text-base font-black flex items-center gap-2">
-                  <FileText className="text-indigo-400" size={18} />
-                  <span>Daftar Pejabat Penandatangan</span>
-                </h3>
-                <p className="text-slate-400 text-xs">
-                  Daftar di bawah ini muncul pada bagian bawah berkas lampiran Cetak Nominatif (print pdf/excel) untuk tanda tangan pengesahan.
-                </p>
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                <div className="flex flex-col">
+                  <h3 className="text-white text-base font-black flex items-center gap-2">
+                    <FileText className="text-indigo-400" size={18} />
+                    <span>Daftar Pejabat Penandatangan</span>
+                  </h3>
+                  <p className="text-slate-400 text-xs">
+                    Daftar di bawah ini muncul pada bagian bawah berkas lampiran Cetak Nominatif (print pdf/excel) untuk tanda tangan pengesahan.
+                  </p>
+                </div>
+                {!isAddingPejabat && (
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingPejabat(true)}
+                    className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer shadow-lg shadow-indigo-600/20 active:scale-95 transition-all self-start sm:self-auto shrink-0"
+                  >
+                    <Plus size={14} />
+                    <span>Tambah Penandatangan</span>
+                  </button>
+                )}
               </div>
+
+              {/* Add New Official Form */}
+              {isAddingPejabat && (
+                <form 
+                  onSubmit={handleAddPejabat}
+                  className="p-5 rounded-2xl border bg-indigo-500/5 border-indigo-500/20 space-y-4 max-w-xl mx-auto"
+                >
+                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                    <span className="text-white text-xs font-bold flex items-center gap-1.5">
+                      <User className="text-indigo-400" size={15} />
+                      Tambah Pejabat Penandatangan Baru
+                    </span>
+                    <button 
+                      type="button"
+                      onClick={() => setIsAddingPejabat(false)}
+                      className="text-slate-400 hover:text-white text-xs cursor-pointer focus:outline-none"
+                    >
+                      Batal
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-slate-400 font-mono text-[10px] uppercase block">Jabatan Pengesah:</label>
+                      <input
+                        type="text"
+                        placeholder="Contoh: Kepala Madrasah / KPA, Pejabat Pembuat Komitmen"
+                        required
+                        value={newPejabatData.jabatan}
+                        onChange={(e) => setNewPejabatData({ ...newPejabatData, jabatan: e.target.value })}
+                        className="bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-white w-full text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-slate-400 font-mono text-[10px] uppercase block">Nama Lengkap & Gelar:</label>
+                      <input
+                        type="text"
+                        placeholder="Contoh: Ahmad Sulaiman, S.Pd., M.Si."
+                        required
+                        value={newPejabatData.nama}
+                        onChange={(e) => setNewPejabatData({ ...newPejabatData, nama: e.target.value })}
+                        className="bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-white w-full text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-slate-400 font-mono text-[10px] uppercase block">Nomor Induk Pegawai (NIP):</label>
+                      <input
+                        type="text"
+                        placeholder="Contoh: 198205122005031002"
+                        required
+                        value={newPejabatData.nip}
+                        onChange={(e) => setNewPejabatData({ ...newPejabatData, nip: e.target.value })}
+                        className="bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-white w-full text-xs font-mono focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 justify-end pt-2 border-t border-white/5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAddingPejabat(false);
+                        setNewPejabatData({ jabatan: '', nama: '', nip: '' });
+                      }}
+                      className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1 cursor-pointer shadow-md shadow-emerald-500/10"
+                    >
+                      <Plus size={12} />
+                      <span>Tambah Pejabat</span>
+                    </button>
+                  </div>
+                </form>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {pejabatList.map((p) => {
@@ -554,13 +676,22 @@ export default function ReferensiSistem({
                             </div>
                           </div>
                           
-                          <button
-                            onClick={() => startEditPejabat(p)}
-                            className="bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white p-2 rounded-xl transition-all cursor-pointer focus:outline-none"
-                            title="Edit Data Pejabat"
-                          >
-                            <Edit size={14} />
-                          </button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => startEditPejabat(p)}
+                              className="bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white p-2 rounded-xl transition-all cursor-pointer focus:outline-none"
+                              title="Edit Data Pejabat"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeletePejabat(p.id)}
+                              className="bg-white/5 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 p-2 rounded-xl transition-all cursor-pointer focus:outline-none"
+                              title="Hapus Pejabat"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>

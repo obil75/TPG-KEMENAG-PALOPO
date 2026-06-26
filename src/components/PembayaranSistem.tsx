@@ -17,7 +17,8 @@ import {
   X,
   Calendar,
   CheckSquare,
-  Square
+  Square,
+  Pencil
  } from 'lucide-react';
  
  interface PembayaranSistemProps {
@@ -43,6 +44,7 @@ import {
  }: PembayaranSistemProps) {
    // Navigation inside pembayaran: list view or detail view
    const [activePaymentId, setActivePaymentId] = useState<string | null>(null);
+  const [editingPayment, setEditingPayment] = useState<PembayaranTunjangan | null>(null);
  
    // Active category tab for list view filtering
    const [activeTabState, setActiveTabState] = useState<'Pembayaran TPG' | 'Pembayaran Tukin' | 'Kekurangan TPG' | 'Kekurangan Tukin'>('Pembayaran TPG');
@@ -93,6 +95,8 @@ import {
     const [manualShortage, setManualShortage] = useState<Record<string, string>>({});
     const [manualShortageMonths, setManualShortageMonths] = useState<Record<string, string>>({});
     const [manualShortagePph, setManualShortagePph] = useState<Record<string, string>>({});
+    const [manualShortageTukin, setManualShortageTukin] = useState<Record<string, string>>({});
+    const [manualShortageTukinMonths, setManualShortageTukinMonths] = useState<Record<string, string>>({});
     const [selectedPegawaiIds, setSelectedPegawaiIds] = useState<string[]>([]);
 
     // Automatically sync checklist of employee IDs based on selected employee category (excluding retired/pensiun employees)
@@ -348,6 +352,55 @@ import {
       setDeleteConfirmId(null);
       setDeleteConfirmJudul('');
     }
+  };
+
+  const handleSaveEditPayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPayment) return;
+
+    const isTPG = editingPayment.kategori?.includes('TPG') ?? false;
+    const isTukin = editingPayment.kategori?.includes('Tukin') ?? false;
+
+    const updatedList = pembayaranList.map(p => {
+      if (p.id === editingPayment.id) {
+        const updatedItems = p.itemNominatif.map(item => {
+          const peg = pegawaiList.find(x => x.id === item.pegawaiId || x.nip === item.nip);
+          if (peg) {
+            return hitungItemNominatif(
+              peg,
+              isTPG,
+              isTukin,
+              item.persenKehadiran ?? 100,
+              golonganRefs,
+              gradeTukinRefs
+            );
+          }
+          return {
+            ...item,
+            bayarTPG: isTPG,
+            bayarTukin: isTukin,
+          };
+        });
+
+        return {
+          ...p,
+          judul: editingPayment.judul,
+          nomorSurat: editingPayment.nomorSurat,
+          bulan: editingPayment.bulan,
+          tahun: editingPayment.tahun,
+          kategori: editingPayment.kategori,
+          tempatCetak: editingPayment.tempatCetak,
+          tanggalCetak: editingPayment.tanggalCetak,
+          mulaiBulan: editingPayment.bulan === 15 ? editingPayment.mulaiBulan : undefined,
+          sampaiBulan: editingPayment.bulan === 15 ? editingPayment.sampaiBulan : undefined,
+          itemNominatif: updatedItems,
+        };
+      }
+      return p;
+    });
+
+    setPembayaranList(updatedList);
+    setEditingPayment(null);
   };
 
   // Helper to resolve an employee's category and filter nominative items
@@ -1029,15 +1082,24 @@ import {
                             <div className="flex items-center justify-center gap-2">
                               <button
                                 onClick={() => setActivePaymentId(p.id)}
-                                className="flex items-center gap-1 bg-white/10 hover:bg-white/20 text-white text-[10px] px-2.5 py-1 rounded cursor-pointer font-semibold transition"
+                                className="p-1.5 bg-white/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 rounded transition cursor-pointer flex items-center justify-center"
+                                title="Buka Detail & Cetak"
                               >
-                                <Eye size={11} /> Buka Detail & Cetak
+                                <Printer size={13} />
+                              </button>
+                              <button
+                                onClick={() => setEditingPayment({ ...p })}
+                                className="p-1.5 bg-white/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 rounded transition cursor-pointer flex items-center justify-center"
+                                title="Edit Agenda Pembayaran"
+                              >
+                                <Pencil size={13} />
                               </button>
                               <button
                                 onClick={() => handleDeletePembayaran(p.id, p.judul)}
-                                className="p-1 text-slate-400 hover:bg-red-500/20 hover:text-red-400 rounded transition cursor-pointer"
+                                className="p-1.5 text-slate-400 hover:bg-red-500/20 hover:text-red-400 rounded transition cursor-pointer flex items-center justify-center"
+                                title="Hapus Agenda"
                               >
-                                <Trash2 size={12} />
+                                <Trash2 size={13} />
                               </button>
                             </div>
                           </td>
@@ -1118,7 +1180,57 @@ import {
             </div>            {/* Print Table */}
             <table className="w-full text-[11px] border-collapse print-table">
               <thead>
-                {activePayment.kategori?.includes('Tukin') ? (
+                {activePayment.kategori === 'Kekurangan Tukin' ? (
+                  <tr className="bg-slate-50 text-[11px] font-bold">
+                    <th className="border border-black py-1 px-1 text-center font-bold">NO</th>
+                    <th className="border border-black py-1 px-2 text-left font-bold">NAMA / NIP</th>
+                    <th className="border border-black py-1 px-1 text-center font-bold">GOL</th>
+                    <th className="border border-black py-1 px-2 text-right font-bold">
+                      <div className="leading-tight">JMLH KEKURANGAN</div>
+                      <div className="leading-tight font-bold text-[11px] text-slate-900">JMLH BULAN</div>
+                    </th>
+                    <th className="border border-black py-1 px-2 text-right font-bold">
+                      <div className="leading-tight font-sans">JMLH TOTAL</div>
+                      <div className="leading-tight font-bold text-[11px] text-slate-900">PPH</div>
+                    </th>
+                    <th className="border border-black py-1 px-2 text-right font-bold">
+                      <div className="leading-tight font-sans">JMLH BRUTO</div>
+                      <div className="leading-tight font-bold text-[11px] text-slate-900">JMLH DITERIMA</div>
+                    </th>
+                    <th className="border border-black py-1 px-2 text-left font-bold font-sans">NO. REKENING</th>
+                    <th className="border border-black py-1 px-2 text-center font-bold" style={{ width: '90px' }}>
+                      <div className="leading-tight">TANDA</div>
+                      <div className="leading-tight">TANGAN</div>
+                    </th>
+                  </tr>
+                ) : activePayment.kategori === 'Pembayaran Tukin' ? (
+                  <tr className="bg-slate-50 text-[11px] font-bold">
+                    <th className="border border-black py-1 px-1 text-center font-bold">NO</th>
+                    <th className="border border-black py-1 px-2 text-left font-bold">NAMA / NIP</th>
+                    <th className="border border-black py-1 px-1 text-center font-bold">GOL</th>
+                    <th className="border border-black py-1 px-2 text-right font-bold">
+                      <div className="leading-tight">NILAI GRADE</div>
+                      <div className="leading-tight font-bold text-[11px] text-slate-900">GAJI POKOK</div>
+                    </th>
+                    <th className="border border-black py-1 px-2 text-right font-bold">
+                      <div className="leading-tight">JMLH SELISIH</div>
+                      <div className="leading-tight font-bold text-[11px] text-slate-900">JMLH POTONGAN</div>
+                    </th>
+                    <th className="border border-black py-1 px-2 text-right font-bold">
+                      <div className="leading-tight font-sans">JMLH BERSIH</div>
+                      <div className="leading-tight font-bold text-[11px] text-slate-900">PPH</div>
+                    </th>
+                    <th className="border border-black py-1 px-2 text-right font-bold">
+                      <div className="leading-tight font-sans">JMLH BRUTO</div>
+                      <div className="leading-tight font-bold text-[11px] text-slate-900">JMLH DITERIMA</div>
+                    </th>
+                    <th className="border border-black py-1 px-2 text-left font-bold font-sans">NO. REKENING</th>
+                    <th className="border border-black py-1 px-2 text-center font-bold" style={{ width: '90px' }}>
+                      <div className="leading-tight">TANDA</div>
+                      <div className="leading-tight">TANGAN</div>
+                    </th>
+                  </tr>
+                ) : activePayment.kategori?.includes('Tukin') ? (
                   <tr className="bg-slate-50 text-[11px] font-bold">
                     <th className="border border-black py-1 px-1 text-center font-bold">NO</th>
                     <th className="border border-black py-1 px-2 text-left font-bold">NAMA / NIP</th>
@@ -1184,7 +1296,161 @@ import {
                 )}
               </thead>
               <tbody>
-                {activePayment.kategori?.includes('Tukin') ? (
+                {activePayment.kategori === 'Kekurangan Tukin' ? (
+                  <>
+                    {getFilteredNominatif(activePayment.itemNominatif).map((item, idx) => {
+                      const peg = pegawaiList.find(x => x.id === item.pegawaiId || x.nip === item.nip);
+                      const key = item.pegawaiId || idx;
+                      
+                      const rawShortage = manualShortageTukin[key] ?? '0';
+                      const kekuranganStr = rawShortage ? parseInt(rawShortage.replace(/[^0-9]/g, ''), 10).toLocaleString('id-ID') : '0';
+                      const bulanStr = manualShortageTukinMonths[key] ?? '0';
+                      
+                      const kekuranganNum = parseFloat(kekuranganStr.replace(/[^0-9]/g, '')) || 0;
+                      const bulanNum = parseFloat(bulanStr.replace(/[^0-9]/g, '')) || 0;
+                      
+                      const jmlhSelisih = kekuranganNum * bulanNum;
+                      const jmlhBersih = jmlhSelisih;
+                      const pph = Math.round(jmlhBersih * item.tarifPPhTukin);
+                      const jmlhBruto = jmlhBersih + pph;
+                      const jmlhDiterima = jmlhBersih;
+
+                      return (
+                        <tr key={item.pegawaiId || idx} className="hover:bg-slate-50 text-[11px]">
+                          <td className="border border-black py-1 px-1 text-center align-middle">{idx + 1}</td>
+                          <td className="border border-black py-1 px-2 align-middle font-bold leading-tight">
+                            {item.nama}
+                            <span className="block text-[11px] font-normal text-slate-600 mt-0.5">{item.nip}</span>
+                          </td>
+                          <td className="border border-black py-1 px-1 text-center align-middle">{item.golongan}</td>
+                          
+                          {/* JMLH KEKURANGAN & JMLH BULAN (MANUAL FILL) */}
+                          <td className="border border-black py-1 px-2 text-right align-middle space-y-1">
+                            <div className="flex items-center justify-end gap-1">
+                              {/* On print, hide input and show normal formatted text */}
+                              <span className="hidden print:inline font-bold text-slate-900 text-[11px] leading-none">
+                                {kekuranganNum.toLocaleString('id-ID')}
+                              </span>
+                              {/* On screen, show input */}
+                              <input
+                                type="text"
+                                placeholder="0"
+                                value={kekuranganStr}
+                                onChange={(e) => {
+                                  const rawVal = e.target.value.replace(/[^0-9]/g, '');
+                                  const formattedVal = rawVal ? parseInt(rawVal, 10).toLocaleString('id-ID') : '';
+                                  setManualShortageTukin(prev => ({
+                                    ...prev,
+                                    [key]: formattedVal
+                                  }));
+                                }}
+                                className="no-print w-18 text-right text-[11px] py-px px-1 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono transition-all leading-none focus:bg-white"
+                              />
+                            </div>
+                            <div className="flex items-center justify-end gap-1">
+                              {/* On print, hide input and show normal formatted text */}
+                              <span className="hidden print:inline text-slate-600 text-[11px] leading-none">
+                                {bulanNum}
+                              </span>
+                              {/* On screen, show input */}
+                              <input
+                                type="text"
+                                placeholder="0"
+                                value={bulanStr}
+                                onChange={(e) => {
+                                  const rawVal = e.target.value.replace(/[^0-9]/g, '');
+                                  setManualShortageTukinMonths(prev => ({
+                                    ...prev,
+                                    [key]: rawVal
+                                  }));
+                                }}
+                                className="no-print w-18 text-right text-[11px] py-px px-1 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono transition-all leading-none focus:bg-white"
+                              />
+                            </div>
+                          </td>
+
+                          {/* JMLH BERSIH & PPH */}
+                          <td className="border border-black py-1 px-2 text-right align-middle font-sans space-y-0">
+                            <div className="font-bold text-slate-900 leading-none">{jmlhBersih.toLocaleString('id-ID')}</div>
+                            <div className="text-slate-600 text-[11px] leading-none mt-1">{pph.toLocaleString('id-ID')}</div>
+                          </td>
+
+                          {/* JMLH BRUTO & JMLH DITERIMA */}
+                          <td className="border border-black py-1 px-2 text-right align-middle font-sans space-y-0">
+                            <div className="font-bold text-slate-900 leading-none">{jmlhBruto.toLocaleString('id-ID')}</div>
+                            <div className="text-slate-600 text-[11px] leading-none mt-1">{jmlhDiterima.toLocaleString('id-ID')}</div>
+                          </td>
+
+                          <td className="border border-black py-1 px-2 text-left align-middle font-sans">
+                            {peg ? peg.bankRekening : '-'}
+                          </td>
+
+                          {/* Signature Column */}
+                          <td className="border border-black py-1 px-2 text-left align-middle" style={{ width: '90px' }}>
+                            <div className="text-left font-sans text-[11px]">
+                              <span>{idx + 1}. ....................</span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                    {/* Kekurangan Tukin Aggregate Summary Row */}
+                    {(() => {
+                      const filteredItems = getFilteredNominatif(activePayment.itemNominatif);
+                      
+                      let totalKekurangan = 0;
+                      let totalBulan = 0;
+                      let totalJmlhBersih = 0;
+                      let totalPph = 0;
+                      let totalJmlhBruto = 0;
+                      let totalJmlhDiterima = 0;
+
+                      filteredItems.forEach((item, idx) => {
+                        const key = item.pegawaiId || idx;
+                        const rawShortage = manualShortageTukin[key] ?? '0';
+                        const kVal = parseFloat(rawShortage.replace(/[^0-9]/g, '')) || 0;
+                        const bVal = parseFloat(manualShortageTukinMonths[key] ?? '0') || 0;
+
+                        const selisih = kVal * bVal;
+                        const bersih = selisih;
+                        const tax = Math.round(bersih * item.tarifPPhTukin);
+                        const bruto = bersih + tax;
+                        const diterima = bersih;
+
+                        totalKekurangan += kVal;
+                        totalBulan += bVal;
+                        totalJmlhBersih += bersih;
+                        totalPph += tax;
+                        totalJmlhBruto += bruto;
+                        totalJmlhDiterima += diterima;
+                      });
+
+                      return (
+                        <tr className="font-bold bg-slate-100 text-slate-900 text-[11px]">
+                          <td className="border border-black py-1.5 px-2 text-center" colSpan={3}>JUMLAH TOTAL</td>
+                          {/* JMLH KEKURANGAN & JMLH BULAN TOTALS */}
+                          <td className="border border-black py-1.5 px-2 text-right">
+                            <div className="font-extrabold leading-none">{totalKekurangan.toLocaleString('id-ID')}</div>
+                            <div className="font-bold text-slate-700 text-[11px] leading-none mt-1">{totalBulan.toLocaleString('id-ID')}</div>
+                          </td>
+                          {/* JMLH BERSIH & PPH TOTALS */}
+                          <td className="border border-black py-1.5 px-2 text-right font-sans">
+                            <div className="font-extrabold text-black leading-none">{totalJmlhBersih.toLocaleString('id-ID')}</div>
+                            <div className="font-bold text-slate-700 text-[11px] leading-none mt-1">{totalPph.toLocaleString('id-ID')}</div>
+                          </td>
+                          {/* JMLH BRUTO & JMLH DITERIMA TOTALS */}
+                          <td className="border border-black py-1.5 px-2 text-right font-sans">
+                            <div className="font-extrabold text-black leading-none">{totalJmlhBruto.toLocaleString('id-ID')}</div>
+                            <div className="font-bold text-slate-700 text-[11px] leading-none mt-1">{totalJmlhDiterima.toLocaleString('id-ID')}</div>
+                          </td>
+                          <td className="border border-black py-1.5 px-2 bg-slate-50"></td>
+                          <td className="border border-black py-1.5 px-2 bg-slate-50"></td>
+                        </tr>
+                      );
+                    })()}
+                  </>
+                ) : activePayment.kategori?.includes('Tukin') ? (
                   <>
                     {getFilteredNominatif(activePayment.itemNominatif).map((item, idx) => {
                       const peg = pegawaiList.find(x => x.id === item.pegawaiId || x.nip === item.nip);
@@ -1764,6 +2030,223 @@ import {
                 Simpan Periode
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Agenda Pembayaran Dialog */}
+      {editingPayment && (
+        <div className="fixed inset-0 bg-[#000000]/75 backdrop-blur-md flex justify-center items-center z-[100] p-4 transition-all animate-fade-in animate-once" id="edit-payment-dialog">
+          <div className="bg-[#1e293b] rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden flex flex-col border border-white/10 text-slate-200">
+            {/* Header */}
+            <div className="p-5 border-b border-white/10 bg-amber-500/5 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-amber-400 font-bold">
+                <Pencil size={18} />
+                <h3 className="text-base font-bold text-white">Edit Agenda Pembayaran</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingPayment(null)}
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-full cursor-pointer transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveEditPayment} className="flex flex-col overflow-hidden">
+              {/* Body */}
+              <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-white/15 pr-1">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">Judul / Nama Agenda Pembayaran</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingPayment.judul}
+                      onChange={(e) => setEditingPayment(prev => prev ? { ...prev, judul: e.target.value } : null)}
+                      className="w-full bg-[#0f172a] p-2.5 border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-amber-500 rounded-xl text-sm"
+                      placeholder="Contoh: Pembayaran TPG & Tukin Guru Semester I"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">Nomor Surat Keputusan</label>
+                      <input
+                        type="text"
+                        required
+                        value={editingPayment.nomorSurat}
+                        onChange={(e) => setEditingPayment(prev => prev ? { ...prev, nomorSurat: e.target.value } : null)}
+                        className="w-full bg-[#0f172a] p-2.5 border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-amber-500 rounded-xl text-sm"
+                        placeholder="Contoh: SK.129/Depdik-Keu/2026"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">Kategori Agenda Pembayaran</label>
+                      <select
+                        value={editingPayment.kategori || ''}
+                        onChange={(e) => {
+                          const val = e.target.value as 'Pembayaran TPG' | 'Pembayaran Tukin' | 'Kekurangan TPG' | 'Kekurangan Tukin';
+                          setEditingPayment(prev => prev ? { ...prev, kategori: val } : null);
+                        }}
+                        className="w-full bg-[#0f172a] border border-white/10 text-white p-2.5 rounded-xl text-sm outline-none font-medium cursor-pointer"
+                      >
+                        <option value="Pembayaran TPG" className="bg-[#1e293b]">Pembayaran TPG</option>
+                        <option value="Pembayaran Tukin" className="bg-[#1e293b]">Pembayaran Tukin</option>
+                        <option value="Kekurangan TPG" className="bg-[#1e293b]">Kekurangan TPG</option>
+                        <option value="Kekurangan Tukin" className="bg-[#1e293b]">Kekurangan Tukin</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">Bulan</label>
+                      <select
+                        value={editingPayment.bulan}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setEditingPayment(prev => {
+                            if (!prev) return null;
+                            const updated = { ...prev, bulan: val };
+                            if (val === 15 && (!updated.mulaiBulan || !updated.sampaiBulan)) {
+                              updated.mulaiBulan = 1;
+                              updated.sampaiBulan = 3;
+                            }
+                            return updated;
+                          });
+                        }}
+                        className="w-full bg-[#0f172a] border border-white/10 text-white p-2.5 rounded-xl text-sm outline-none font-medium cursor-pointer"
+                      >
+                        {INDONESIAN_MONTHS.map((m, idx) => (
+                          <option key={m} value={idx + 1} className="bg-[#1e293b]">{m}</option>
+                        ))}
+                        <option value={13} className="bg-[#1e293b]">THR (Tunjangan Hari Raya)</option>
+                        <option value={14} className="bg-[#1e293b]">KE-13 (Gaji/Tunjangan Ke-13)</option>
+                        <option value={15} className="bg-[#1e293b]">Triwulan</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">Tahun</label>
+                      <select
+                        value={editingPayment.tahun}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setEditingPayment(prev => prev ? { ...prev, tahun: val } : null);
+                        }}
+                        className="w-full bg-[#0f172a] border border-white/10 text-white p-2.5 rounded-xl text-sm outline-none font-medium cursor-pointer"
+                      >
+                        <option value={2026} className="bg-[#1e293b]">2026</option>
+                        <option value={2025} className="bg-[#1e293b]">2025</option>
+                        <option value={2024} className="bg-[#1e293b]">2024</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">Tempat Cetak</label>
+                      <input
+                        type="text"
+                        required
+                        value={editingPayment.tempatCetak || ''}
+                        onChange={(e) => setEditingPayment(prev => prev ? { ...prev, tempatCetak: e.target.value } : null)}
+                        className="w-full bg-[#0f172a] p-2.5 border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-amber-500 rounded-xl text-sm"
+                        placeholder="Contoh: Palopo"
+                      />
+                    </div>
+                  </div>
+
+                  {editingPayment.bulan === 15 && (
+                    <div className="grid grid-cols-2 gap-4 bg-[#0f172a]/60 p-4 border border-white/10 rounded-xl">
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Mulai Bulan</label>
+                        <select
+                          value={editingPayment.mulaiBulan || 1}
+                          onChange={(e) => {
+                            const start = Number(e.target.value);
+                            setEditingPayment(prev => {
+                              if (!prev) return null;
+                              const updated = { ...prev, mulaiBulan: start };
+                              if ((updated.sampaiBulan || 3) < start) {
+                                updated.sampaiBulan = start;
+                              }
+                              return updated;
+                            });
+                          }}
+                          className="w-full bg-[#0f172a] border border-white/10 text-white p-2.5 rounded-xl text-sm outline-none font-medium cursor-pointer"
+                        >
+                          {INDONESIAN_MONTHS.map((m, idx) => (
+                            <option key={m} value={idx + 1} className="bg-[#1e293b]">{m}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Sampai Bulan</label>
+                        <select
+                          value={editingPayment.sampaiBulan || 3}
+                          onChange={(e) => {
+                            const end = Number(e.target.value);
+                            setEditingPayment(prev => prev ? { ...prev, sampaiBulan: end } : null);
+                          }}
+                          className="w-full bg-[#0f172a] border border-white/10 text-white p-2.5 rounded-xl text-sm outline-none font-medium cursor-pointer"
+                        >
+                          {INDONESIAN_MONTHS.map((m, idx) => (
+                            <option key={m} value={idx + 1} disabled={idx + 1 < (editingPayment.mulaiBulan || 1)} className="bg-[#1e293b]">{m}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">Tanggal Cetak</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={editingPayment.tanggalCetak || ''}
+                        onChange={(e) => setEditingPayment(prev => prev ? { ...prev, tanggalCetak: e.target.value } : null)}
+                        placeholder="dd/mm/yyyy"
+                        className="w-full bg-[#0f172a] pl-3 pr-10 py-2.5 border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-amber-500 rounded-xl text-sm font-mono hover:border-white/20 transition-all"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none p-1 flex items-center justify-center">
+                        <Calendar size={16} />
+                      </div>
+                      <input 
+                        type="date"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 opacity-0 cursor-pointer text-slate-100"
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            const [yyyy, mm, dd] = e.target.value.split('-');
+                            setEditingPayment(prev => prev ? { ...prev, tanggalCetak: `${dd}/${mm}/${yyyy}` } : null);
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 bg-white/5 border-t border-white/10 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingPayment(null)}
+                  className="px-4 py-2 text-sm font-semibold text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-lg shadow-amber-500/20 cursor-pointer transition select-none"
+                >
+                  Simpan Perubahan
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

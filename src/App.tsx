@@ -539,7 +539,7 @@ export default function App() {
               {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
             <div className="flex flex-col">
-              <span className="font-bold text-white text-sm md:text-base leading-tight">Dashboard Kepegawaian</span>
+              <span className="font-bold text-white text-sm md:text-base leading-tight">{satkerName}</span>
               <span className="text-[10px] text-slate-400 font-mono mt-0.5 uppercase tracking-wider">Halaman Administrator Keuangan</span>
             </div>
           </div>

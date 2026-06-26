@@ -550,14 +550,14 @@ export default function DataPegawai({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-white/10 text-[11px] text-amber-400 uppercase tracking-widest font-semibold font-sans">
-                <th className="sticky top-0 z-10 bg-[#162035] py-2.5 px-4 text-center w-12 border-b border-white/10">NO</th>
-                <th className="sticky top-0 z-10 bg-[#162035] py-2.5 px-4 border-b border-white/10">Nama / NIP</th>
-                <th className="sticky top-0 z-10 bg-[#162035] py-2.5 px-4 border-b border-white/10">Golongan</th>
-                <th className="sticky top-0 z-10 bg-[#162035] py-2.5 px-4 text-right border-b border-white/10">Gaji Pokok</th>
-                <th className="sticky top-0 z-10 bg-[#162035] py-2.5 px-4 text-center border-b border-white/10">Tunjangan Kinerja (Tukin)</th>
-                <th className="sticky top-0 z-10 bg-[#162035] py-2.5 px-4 border-b border-white/10">NO. REKENING</th>
-                <th className="sticky top-0 z-10 bg-[#162035] py-2.5 px-4 text-center border-b border-white/10">Kategori</th>
-                <th className="sticky top-0 z-10 bg-[#162035] py-2.5 px-4 text-center border-b border-white/10">Aksi</th>
+                <th className="bg-[#162035] py-2.5 px-4 text-center w-12 border-b border-white/10">NO</th>
+                <th className="bg-[#162035] py-2.5 px-4 border-b border-white/10">Nama / NIP</th>
+                <th className="bg-[#162035] py-2.5 px-4 border-b border-white/10">Golongan</th>
+                <th className="bg-[#162035] py-2.5 px-4 text-right border-b border-white/10">Gaji Pokok</th>
+                <th className="bg-[#162035] py-2.5 px-4 text-center border-b border-white/10">Tunjangan Kinerja (Tukin)</th>
+                <th className="bg-[#162035] py-2.5 px-4 border-b border-white/10">NO. REKENING</th>
+                <th className="bg-[#162035] py-2.5 px-4 text-center border-b border-white/10">Kategori</th>
+                <th className="bg-[#162035] py-2.5 px-4 text-center border-b border-white/10">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-sm">
